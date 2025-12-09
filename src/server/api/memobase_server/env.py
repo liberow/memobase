@@ -100,6 +100,7 @@ class Config:
     best_llm_model: str = "gpt-4o-mini"
     thinking_llm_model: str = "o4-mini"
     summary_llm_model: str = None
+    value_scorer_model: str = None
 
     enable_event_embedding: bool = True
     embedding_provider: Literal["openai", "jina", "ollama"] = "openai"
@@ -119,6 +120,17 @@ class Config:
 
     minimum_chats_token_size_for_event_summary: int = 256
     event_tags: list[dict] = field(default_factory=list)
+
+    # Enable (Recency, Value, Relevance) rerank events
+    enable_qamr: bool = True
+    # Recency 衰减因子 (0.995 表示每小时衰减约 0.5%)
+    recency_decay_factor: float = 0.995
+    # 不同问题类型的权重配置 (relevance, value, recency)
+    qamr_weights_temporal: tuple = (0.3, 0.1, 0.6)     # 时间问题重视 recency
+    qamr_weights_single_hop: tuple = (0.7, 0.2, 0.1)   # 事实查询重视 relevance
+    qamr_weights_multi_hop: tuple = (0.4, 0.5, 0.1)    # 推理问题重视 value
+    qamr_weights_open_domain: tuple = (0.5, 0.3, 0.2)  # 开放问题均衡
+    
     # Telemetry
     telemetry_deployment_environment: str = "local"
 
