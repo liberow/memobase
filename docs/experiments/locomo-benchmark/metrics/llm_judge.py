@@ -40,7 +40,8 @@ Just return the label CORRECT or WRONG in a json format with the key as "label".
 def evaluate_llm_judge(question, gold_answer, generated_answer):
     """Evaluate the generated answer against the gold answer using an LLM judge."""
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        # model="gpt-4o-mini",
+        model=os.getenv("MODEL", "gpt-4o-mini"),
         messages=[
             {
                 "role": "user",
@@ -54,7 +55,22 @@ def evaluate_llm_judge(question, gold_answer, generated_answer):
         response_format={"type": "json_object"},
         temperature=0.0,
     )
-    label = json.loads(response.choices[0].message.content)["label"]
+
+    # label = json.loads(response.choices[0].message.content)["label"]
+    try:
+        label = json.loads(response.choices[0].message.content)["label"]
+    except json.JSONDecodeError:
+        print(f"Warning: Could not parse label from response: {response.choices[0].message.content}")
+        # 尝试从文本中提取
+        content = response.choices[0].message.content
+        if "CORRECT" in content.upper():
+            label = "CORRECT"
+        elif "WRONG" in content.upper():
+            label = "WRONG"
+        else:
+            print(f"Warning: Could not parse label from response: {content}")
+            label = "WRONG"  # 默认为 WRONG
+
     return 1 if label == "CORRECT" else 0
 
 

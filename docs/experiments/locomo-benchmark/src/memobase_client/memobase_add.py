@@ -7,6 +7,7 @@ from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 from memobase import MemoBaseClient, AsyncMemoBaseClient, ChatBlob
+import httpx
 
 load_dotenv()
 
@@ -24,6 +25,9 @@ class MemobaseADD:
             api_key=os.getenv("MEMOBASE_API_KEY"),
             project_url=os.getenv("MEMOBASE_PROJECT_URL", "https://api.memobase.dev"),
         )
+        # 增加 HTTP 超时时间到 300 秒，避免豆包 embedding API 慢导致超时
+        self.client.client.timeout = httpx.Timeout(300.0, connect=60.0)
+        
         if os.path.exists(config_path):
             with open(config_path, "r") as f:
                 config = f.read()
