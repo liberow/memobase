@@ -13,6 +13,7 @@ from .event_gist import (
     get_user_event_gists,
     truncate_event_gists,
     search_user_event_gists,
+    rerank_event_gists_by_value_score,
 )
 
 
@@ -201,6 +202,12 @@ async def get_user_context(
         return Promise.resolve(
             ContextData(context=context_prompt_func(profile_section, ""))
         )
+
+    # Apply soft value-based reranking: rerank events by combined score (similarity + value_score)
+    p = await rerank_event_gists_by_value_score(user_id, project_id, user_event_gists)
+    if not p.ok():
+        return p
+    user_event_gists = p.data()
 
     # Truncate events based on calculated token size
     p = await truncate_event_gists(user_event_gists, max_event_token_size)

@@ -81,3 +81,4 @@ class UserEventGistData(BaseModel):
         None, description="Timestamp when the event gist was last updated"
     )
     similarity: Optional[float] = Field(None, description="Similarity score")
+    combined_score: Optional[float] = Field(None, description="Combined score for value-based reranking")

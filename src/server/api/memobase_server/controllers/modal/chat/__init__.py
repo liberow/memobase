@@ -9,6 +9,7 @@ from ....models.response import IdsData, ChatModalResponse, UserProfilesData
 from ...profile import add_update_delete_user_profiles
 from ...event import append_user_event
 from ...profile import get_user_profiles
+from ....value_scoring.value_scorer import score_session_event_value
 from .extract import extract_topics
 
 # from .merge import merge_or_valid_new_memos
@@ -208,12 +209,30 @@ async def handle_session_event(
     delta_profile_data: list[dict],
     event_tags: list | None,
     config: ProfileConfig,
-) -> Promise[str]:
+) -> Promise[str | None]:
+    # 可选的基于价值的记忆筛选: 在持久化到长期记忆之前根据价值分数筛选事件。
+    value_score: float | None = None
+    if CONFIG.value_scoring_mode != "off":
+        score = await score_session_event_value(project_id, user_id, memo_str)
+        value_score = score
+        TRACE_LOG.info(
+            project_id,
+            user_id,
+            f"Session event value score: {score}",
+        )
+        if CONFIG.value_scoring_mode == "hard" and score < CONFIG.value_score_threshold_event:
+            TRACE_LOG.info(
+                project_id,
+                user_id,
+                f"Skip persisting low-value session event, score={score}",
+            )
+            return Promise.resolve(None)
 
     eid = await append_user_event(
         user_id,
         project_id,
         {
+            "value_score": value_score,
             "event_tip": memo_str,
             "event_tags": event_tags,
             "profile_delta": delta_profile_data,

@@ -12,6 +12,7 @@ from memobase import MemoBaseClient
 from memobase.error import ServerError
 from .memobase_add import string_to_uuid
 from dotenv import load_dotenv
+import httpx
 
 load_dotenv()
 
@@ -28,6 +29,9 @@ class MemobaseSearch:
             api_key=os.getenv("MEMOBASE_API_KEY"),
             project_url=os.getenv("MEMOBASE_PROJECT_URL", "https://api.memobase.dev"),
         )
+        # 增加 HTTP 超时时间到 300 秒，避免豆包 embedding API 慢导致超时
+        self.client.client.timeout = httpx.Timeout(300.0, connect=60.0)
+        
         self.top_k = top_k
         self.openai_client = OpenAI(
             api_key=os.getenv("OPENAI_API_KEY"),

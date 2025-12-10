@@ -100,6 +100,7 @@ class Config:
     best_llm_model: str = "gpt-4o-mini"
     thinking_llm_model: str = "o4-mini"
     summary_llm_model: str = None
+    value_scorer_model: str = None
 
     enable_event_embedding: bool = True
     embedding_provider: Literal["openai", "jina", "ollama"] = "openai"
@@ -119,6 +120,17 @@ class Config:
 
     minimum_chats_token_size_for_event_summary: int = 256
     event_tags: list[dict] = field(default_factory=list)
+
+    # 基于价值的 agent memory 
+    # - "off": 禁用价值评分
+    # - "soft": 评分 + 检索时根据价值分数重排序
+    # - "hard": 评分 + 写入时过滤低价值事件
+    value_scoring_mode: Literal["off", "soft", "hard"] = "off"
+    value_score_threshold_event: float = 0.35
+    # soft mode: 综合得分权重: combined_score = α * similarity + (1-α) * value_score
+    # α 越大，越重视语义相似度；α 越小，越重视价值分数
+    soft_rerank_alpha: float = 0.7
+
     # Telemetry
     telemetry_deployment_environment: str = "local"
 
