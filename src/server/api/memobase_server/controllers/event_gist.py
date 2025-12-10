@@ -6,6 +6,7 @@ from ..connectors import Session
 from ..utils import get_encoded_tokens, event_str_repr, event_embedding_str
 
 from ..llms.embeddings import get_embedding
+from ..qamr import rerank_by_qamr
 from datetime import timedelta
 from sqlalchemy import desc, select
 from sqlalchemy.sql import func
@@ -69,6 +70,7 @@ async def search_user_event_gists(
     topk: int = 10,
     similarity_threshold: float = 0.2,
     time_range_in_days: int = 21,
+    query_type: str = "open_domain",
 ) -> Promise[UserEventGistsData]:
     if not CONFIG.enable_event_embedding:
         TRACE_LOG.warning(
@@ -98,6 +100,9 @@ async def search_user_event_gists(
     # Store the similarity expression to avoid recomputation
     similarity_expr = 1 - UserEventGist.embedding.cosine_distance(query_embedding)
 
+    # When QAMR is enabled, fetch more candidates for reranking
+    fetch_limit = topk * 3 if CONFIG.enable_qamr else topk
+
     stmt = (
         select(
             UserEventGist,
@@ -111,16 +116,42 @@ async def search_user_event_gists(
             UserEventGist.embedding.is_not(None),  # Skip null embeddings
         )
         .order_by(desc("similarity"))
-        .limit(topk)
+        .limit(fetch_limit)
     )
 
     with Session() as session:
         # Use .all() instead of .scalars().all() to get both columns
         result = session.execute(stmt).all()
-        user_event_gists: list[UserEventGistData] = []
+        
+        # Build candidate list with similarity scores
+        candidates = []
         for row in result:
-            user_event: UserEventGist = row[0]  # UserEventGist object
-            similarity: float = row[1]  # similarity value
+            user_event: UserEventGist = row[0]
+            similarity: float = row[1]
+            candidates.append({
+                "event": user_event,
+                "similarity": similarity,
+            })
+        
+        # Apply QAMR reranking if enabled
+        if CONFIG.enable_qamr and candidates:
+            reranked = rerank_by_qamr(
+                items=candidates,
+                get_similarity=lambda x: x["similarity"],
+                get_created_at=lambda x: x["event"].created_at,
+                get_value_score=None,  # TODO: integrate value scoring
+                query_type=query_type,
+                topk=topk,
+            )
+            candidates = [item for item, score in reranked]
+        else:
+            candidates = candidates[:topk]
+        
+        # Convert to response format
+        user_event_gists: list[UserEventGistData] = []
+        for candidate in candidates:
+            user_event = candidate["event"]
+            similarity = candidate["similarity"]
             user_event_gists.append(
                 UserEventGistData(
                     id=user_event.id,
@@ -136,7 +167,7 @@ async def search_user_event_gists(
         TRACE_LOG.info(
             project_id,
             user_id,
-            f"Event Query: {query}",
+            f"Event Query: {query} (QAMR: {CONFIG.enable_qamr}, type: {query_type})",
         )
 
     return Promise.resolve(user_event_gists_data)

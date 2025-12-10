@@ -66,17 +66,21 @@ async def search_user_events(
     use_gists: bool = Query(
         True, description="Whether to search event gists (default) or event tip"
     ),
+    query_type: str = Query(
+        "open_domain", 
+        description="Query type for QAMR weighting: temporal, single_hop, multi_hop, open_domain"
+    ),
 ) -> res.UserEventGistsDataResponse |res.UserEventsDataResponse:
     project_id = request.state.memobase_project_id
     
     if use_gists:
         p = await controllers.event_gist.search_user_event_gists(
-            user_id, project_id, query, topk, similarity_threshold, time_range_in_days
+            user_id, project_id, query, topk, similarity_threshold, time_range_in_days, query_type
         )
         return p.to_response(res.UserEventGistsDataResponse)
     else:
         p = await controllers.event.search_user_events(
-            user_id, project_id, query, topk, similarity_threshold, time_range_in_days
+            user_id, project_id, query, topk, similarity_threshold, time_range_in_days, query_type
         )
         return p.to_response(res.UserEventsDataResponse)
 
@@ -92,10 +96,14 @@ async def search_user_event_gists(
     time_range_in_days: int = Query(
         180, description="Only allow events within the past few days, default is 180"
     ),
+    query_type: str = Query(
+        "open_domain", 
+        description="Query type for QAMR weighting: temporal, single_hop, multi_hop, open_domain"
+    ),
 ) -> res.UserEventGistsDataResponse:
     project_id = request.state.memobase_project_id
     p = await controllers.event_gist.search_user_event_gists(
-        user_id, project_id, query, topk, similarity_threshold, time_range_in_days
+        user_id, project_id, query, topk, similarity_threshold, time_range_in_days, query_type
     )
     return p.to_response(res.UserEventGistsDataResponse)
 

@@ -1,4 +1,4 @@
-# Forgetting Memory
+# QAMR Memory
 
 ## 1. 环境配置
 
@@ -9,10 +9,10 @@
 git clone git@github.com:liberow/memobase.git
 
 # create env 
-conda create -n selective_forgetting python=3.11 -y
+conda create -n memobase_qamr python=3.11 -y
 
 # activate env 
-conda activate selective_forgetting
+conda activate memobase_qamr
 
 # into project
 cd memobase/
@@ -65,11 +65,11 @@ fastapi dev api.py --port 8019
 
 2. 
 
-## 3. LOCOMO + Selective Forgetting 完整实验命令
+## 3. LOCOMO + QAMR 完整实验命令
 
 ---
 
-### 阶段 1：LOCOMO Baseline（未使用遗忘机制）
+### 阶段 1：LOCOMO Baseline
 
 1. command
 
@@ -77,12 +77,12 @@ fastapi dev api.py --port 8019
 # 进入实验目录
 cd ./docs/experiments/locomo-benchmark
 
-# 1. 在开启 Selective Forgetting 的 Memobase 上加载对话数据
+# 1. 在 Memobase 上加载对话数据
 python run_experiments.py \
   --technique_type memobase \
   --method add
 
-# 2. 运行检索测试，生成预测答案（Selective Forgetting）
+# 2. 运行检索测试，生成预测答案
 python run_experiments.py \
   --technique_type memobase \
   --method search
@@ -117,20 +117,24 @@ dtype: float64
 
 ---
 
-### 阶段 2：Forget 机制
+### 阶段 2：Value Scoring 机制
 
 
 ---
 
-### 阶段 3：LOCOMO After Forgetting（使用遗忘机制）
+### 阶段 3：LOCOMO After QAMR（使用 QAMR 机制）
 
 #### 3.1. 设置配置
 
 ```yaml
-enable_value_based_forgetting: true
-value_based_forgetting_mode: "soft"  # soft = 检索时重排序，hard = 写入时删除
-soft_forgetting_alpha: 0.7           # 综合得分权重：α * similarity + (1-α) * value_score
-value_score_threshold_event: 0.15    # hard 模式的阈值（soft 模式不使用）
+enable_qamr: true
+recency_decay_factor: 0.999  # 每小时衰减约 0.1%
+
+# 不同问题类型的权重配置 (relevance, value, recency)
+qamr_weights_temporal: [0.5, 0.0, 0.5]      # 时间问题重视 recency
+qamr_weights_single_hop: [1.0, 0.0, 0.0]    # 事实查询重视 relevance  
+qamr_weights_multi_hop: [0.7, 0.3, 0.0]     # 推理问题重视 value
+qamr_weights_open_domain: [0.6, 0.2, 0.2]   # 开放问题均衡
 ```
 
 #### 3.2. 重启 server
@@ -153,24 +157,24 @@ fastapi dev api.py --port 8019
 # 进入实验目录
 cd ./docs/experiments/locomo-benchmark
 
-# 1. 在开启 Selective Forgetting 的 Memobase 上加载对话数据
+# 1. 在开启 QAMR 的 Memobase 上加载对话数据
 python run_experiments.py \
   --technique_type memobase \
   --method add
 
-# 2. 运行检索测试，生成预测答案（Selective Forgetting）
+# 2. 运行检索测试，生成预测答案（QAMR）
 python run_experiments.py \
   --technique_type memobase \
   --method search
 
 # 3. 评估结果
 python evals.py \
-  --input_file results/memobase_locomo_forget_05_result.json \
-  --output_file results/memobase_locomo_forget_05_eval.json
+  --input_file results/memobase_locomo_qamr_05_result.json \
+  --output_file results/memobase_locomo_qamr_05_eval.json
 
 # 4. 生成分数报告
 python generate_scores.py \
-  --input_path results/memobase_locomo_forget_05_eval.json
+  --input_path results/memobase_locomo_qamr_05_eval.json
 ```
 
 
@@ -179,15 +183,17 @@ python generate_scores.py \
 
 #### 00 vs 01
 
-1. forget config
+1. QAMR config
 
 ```yaml
-```yaml
-enable_value_based_forgetting: true
-value_based_forgetting_mode: "soft"  # soft = 检索时重排序，hard = 写入时删除
-soft_forgetting_alpha: 0.7           # 综合得分权重：α * similarity + (1-α) * value_score
-value_score_threshold_event: 0.15    # hard 模式的阈值（soft 模式不使用）
-```
+enable_qamr: true
+recency_decay_factor: 0.999  # 每小时衰减约 0.1%
+
+# 不同问题类型的权重配置 (relevance, value, recency)
+qamr_weights_temporal: [0.5, 0.0, 0.5]      # 时间问题重视 recency
+qamr_weights_single_hop: [1.0, 0.0, 0.0]    # 事实查询重视 relevance  
+qamr_weights_multi_hop: [0.7, 0.3, 0.0]     # 推理问题重视 value
+qamr_weights_open_domain: [0.6, 0.2, 0.2]   # 开放问题均衡
 ```
 
 2. scores
@@ -210,8 +216,8 @@ dtype: float64
 
 3. 和 00 的对比
 
-| 指标 | Category | 00 (Baseline) | 01 (Forget) | 变化 | 变化率 |
-|------|----------|---------------|-------------|------|--------|
+| 指标 | Category | 00 (Baseline) | 01 (QAMR) | 变化 | 变化率 |
+|------|----------|---------------|------------|------|--------|
 | **bleu_score** | 1 (single_hop) | 0.2354 | 0.2254 | -0.0100 | -4.2% |
 | | 2 (temporal) | 0.3237 | 0.3790 | **+0.0553** | **+17.1%** |
 | | 3 (multi_hop) | 0.1235 | 0.1444 | **+0.0209** | **+16.9%** |
@@ -227,18 +233,18 @@ dtype: float64
 
 **Overall 对比：**
 
-| 指标 | 00 (Baseline) | 01 (Forget) | 变化 | 变化率 |
-|------|---------------|-------------|------|--------|
+| 指标 | 00 (Baseline) | 01 (QAMR) | 变化 | 变化率 |
+|------|---------------|-----------|------|--------|
 | bleu_score | 0.3159 | 0.3222 | +0.0063 | +2.0% |
 | f1_score | 0.3969 | 0.4063 | +0.0094 | +2.4% |
 | llm_score | 0.6864 | 0.6779 | -0.0085 | -1.2% |
 
 **分析总结：**
 
-1. **temporal（时序问题）提升显著**：bleu +17.1%, f1 +14.5%，说明遗忘机制帮助过滤了过时信息，提升了时序相关问答的准确性
-2. **multi_hop（多跳推理）全面提升**：bleu +16.9%, f1 +19.3%, llm_score +20.6%，遗忘机制减少了噪声信息干扰
-3. **single_hop 和 open_domain 略有下降**：可能是因为 soft_forgetting_alpha=0.7 对简单检索任务有轻微负面影响
-4. **整体 f1_score 提升 2.4%**：表明遗忘机制对检索精度有正向作用
+1. **temporal（时序问题）提升显著**：bleu +17.1%, f1 +14.5%，说明 QAMR 机制帮助过滤了过时信息，提升了时序相关问答的准确性
+2. **multi_hop（多跳推理）全面提升**：bleu +16.9%, f1 +19.3%, llm_score +20.6%，QAMR 机制减少了噪声信息干扰
+3. **single_hop 和 open_domain 略有下降**：可能是因为 QAMR 权重配置对简单检索任务有轻微负面影响
+4. **整体 f1_score 提升 2.4%**：表明 QAMR 机制对检索精度有正向作用
 5. **llm_score 略降 1.2%**：可能需要调整 alpha 参数以平衡
 
 ---
@@ -262,8 +268,8 @@ qamr_weights_open_domain: [0.5, 0.3, 0.2]   # 开放问题均衡
 2. scores
 
 ```bash
-(selective_forgetting) root@c81ab3b21da2:/workspace/liber/memory/memobase/docs/experiments/locomo-benchmark# python generate_scores.py \
-  --input_path results/memobase_locomo_forget_02_eval.json
+(memobase_qamr) root@c81ab3b21da2:/workspace/liber/memory/memobase/docs/experiments/locomo-benchmark# python generate_scores.py \
+  --input_path results/memobase_locomo_qamr_02_eval.json
 Mean Scores Per Category:
           bleu_score  f1_score  llm_score  count         type
 category                                                     
@@ -283,8 +289,8 @@ dtype: float64
 
 **按类别对比表：**
 
-| 指标 | Category | 00 (Baseline) | 01 (Soft Forget) | 02 (QAMR) | 01 vs 00 | 02 vs 00 | 02 vs 01 |
-|------|----------|---------------|------------------|-----------|----------|----------|----------|
+| 指标 | Category | 00 (Baseline) | 01 (Soft QAMR) | 02 (QAMR) | 01 vs 00 | 02 vs 00 | 02 vs 01 |
+|------|----------|---------------|----------------|-----------|----------|----------|----------|
 | **bleu_score** | 1 (single_hop) | 0.2354 | 0.2254 | 0.2141 | -4.2% | -9.0% | -5.0% |
 | | 2 (temporal) | 0.3237 | 0.3790 | 0.2520 | **+17.1%** | -22.1% | -33.5% |
 | | 3 (multi_hop) | 0.1235 | 0.1444 | 0.1041 | **+16.9%** | -15.7% | -27.9% |
@@ -300,7 +306,7 @@ dtype: float64
 
 **Overall 对比：**
 
-| 指标 | 00 (Baseline) | 01 (Soft Forget) | 02 (QAMR) | 01 vs 00 | 02 vs 00 | 02 vs 01 |
+| 指标 | 00 (Baseline) | 01 (Soft QAMR) | 02 (QAMR) | 01 vs 00 | 02 vs 00 | 02 vs 01 |
 |------|---------------|------------------|-----------|----------|----------|----------|
 | bleu_score | 0.3159 | 0.3222 | 0.2862 | +2.0% | -9.4% | -11.2% |
 | f1_score | 0.3969 | 0.4063 | 0.3616 | +2.4% | -8.9% | -11.0% |
@@ -310,7 +316,7 @@ dtype: float64
 
 1. **02 (QAMR) 整体表现不如预期**：
    - 相比 00 Baseline，所有指标全面下降（bleu -9.4%, f1 -8.9%, llm -2.0%）
-   - 相比 01 Soft Forget，下降更明显（bleu -11.2%, f1 -11.0%）
+   - 相比 01 Soft QAMR，下降更明显（bleu -11.2%, f1 -11.0%）
 
 2. **02 的唯一亮点 - temporal 的 llm_score**：
    - temporal 类别的 llm_score 提升 +5.3%（vs 00）和 +6.3%（vs 01）
@@ -428,5 +434,58 @@ Overall Mean Scores:
 bleu_score    0.2872
 f1_score      0.3627
 llm_score     0.6747
+dtype: float64
+```
+
+
+## 06
+
+1. config
+
+```yaml
+# Language
+language: en  # LoCoMo 是英文数据集，使用英文 prompt
+
+# LLM
+llm_api_key: "182b8a28-3392-4490-90a0-fe4cb6ef5bb2"                
+llm_base_url: "https://ark.cn-beijing.volces.com/api/v3"
+best_llm_model: "doubao-1-5-lite-32k-250115"
+thinking_llm_model: "doubao-1-5-lite-32k-250115"
+value_scorer_model: "doubao-1-5-lite-32k-250115"    
+
+# Embedding
+embedding_provider: openai
+embedding_api_key: "182b8a28-3392-4490-90a0-fe4cb6ef5bb2"          
+embedding_model: "doubao-embedding-large-text-240915"
+embedding_base_url: "https://ark.cn-beijing.volces.com/api/v3"
+embedding_dim: 4096
+
+# QAMR (Quality-Aware Memory Retrieval)
+enable_qamr: true
+recency_decay_factor: 0.999  # 每小时衰减约 0.1%
+
+# 不同问题类型的权重配置 (relevance, value, recency)
+qamr_weights_temporal: [0.5, 0.0, 0.5]      # 时间问题重视 recency
+qamr_weights_single_hop: [1.0, 0.0, 0.0]    # 事实查询重视 relevance  
+qamr_weights_multi_hop: [0.7, 0.3, 0.0]     # 推理问题重视 value
+qamr_weights_open_domain: [0.6, 0.2, 0.2]   # 开放问题均衡
+
+```
+
+2. scores
+
+```bash
+Mean Scores Per Category:
+          bleu_score  f1_score  llm_score  count         type
+category                                                     
+1             0.2291    0.3509     0.7518    282   single_hop
+2             0.2714    0.3485     0.6324    321     temporal
+3             0.1208    0.1579     0.4062     96    multi_hop
+4             0.3643    0.4267     0.6778    841  open_domain
+
+Overall Mean Scores:
+bleu_score    0.3050
+f1_score      0.3798
+llm_score     0.6649
 dtype: float64
 ```

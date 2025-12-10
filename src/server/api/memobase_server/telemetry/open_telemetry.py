@@ -128,7 +128,8 @@ class TelemetryManager:
         try:
             start_http_server(self._prometheus_port)
         except OSError as e:
-            if e.errno == 48:  # Address already in use
+            # if e.errno == 48:  # Address already in use
+            if e.errno in (48, 98):  # Address already in use (48 for macOS, 98 for Linux)
                 LOG.warning(
                     f"Prometheus HTTP server already running on port {self._prometheus_port}"
                 )

@@ -121,7 +121,7 @@ class Config:
     minimum_chats_token_size_for_event_summary: int = 256
     event_tags: list[dict] = field(default_factory=list)
 
-    # Enable (Recency, Value, Relevance) rerank events
+    # QAMR: Quality-Aware Memory Retrieval (Relevance, Value, Recency) rerank events
     enable_qamr: bool = True
     # Recency 衰减因子 (0.995 表示每小时衰减约 0.5%)
     recency_decay_factor: float = 0.995
