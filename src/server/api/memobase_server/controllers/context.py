@@ -90,6 +90,7 @@ async def get_user_event_gists_data(
     require_event_summary: bool,
     event_similarity_threshold: float,
     time_range_in_days: int,
+    query_type: str = "open_domain",
 ) -> Promise[UserEventGistsData]:
     """Retrieve user events data."""
     if chats and CONFIG.enable_event_embedding:
@@ -101,6 +102,7 @@ async def get_user_event_gists_data(
             topk=60,
             similarity_threshold=event_similarity_threshold,
             time_range_in_days=time_range_in_days,
+            query_type=query_type,
         )
     else:
         p = await get_user_event_gists(
@@ -128,6 +130,7 @@ async def get_user_context(
     customize_context_prompt: str = None,
     full_profile_and_only_search_event: bool = False,
     fill_window_with_events: bool = False,
+    query_type: str = "open_domain",
 ) -> Promise[ContextData]:
     import asyncio
 
@@ -165,6 +168,7 @@ async def get_user_context(
             require_event_summary,
             event_similarity_threshold,
             time_range_in_days,
+            query_type=query_type,
         ),
         return_exceptions=True,
     )

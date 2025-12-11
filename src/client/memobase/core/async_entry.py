@@ -344,6 +344,7 @@ class AsyncUser:
         time_range_in_days: int = None,
         full_profile_and_only_search_event: bool = None,
         fill_window_with_events: bool = None,
+        query_type: str = None,
     ) -> str:
         params = f"?max_token_size={max_token_size}"
         if prefer_topics:
@@ -382,6 +383,8 @@ class AsyncUser:
             params += f"&full_profile_and_only_search_event={'true' if full_profile_and_only_search_event else 'false'}"
         if fill_window_with_events is not None:
             params += f"&fill_window_with_events={'true' if fill_window_with_events else 'false'}"
+        if query_type:
+            params += f"&query_type={query_type}"
         r = unpack_response(
             await self.project_client.client.get(
                 f"/users/context/{self.user_id}{params}"

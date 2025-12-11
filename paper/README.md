@@ -153,6 +153,9 @@ fastapi dev api.py --port 8019
 
 #### 3.3. commands
 ```bash
+# 设置 PYTHONPATH
+export PYTHONPATH="/workspace/liber/memory/memobase/src/client:$PYTHONPATH"
+
 # 进入实验目录
 cd ./docs/experiments/locomo-benchmark
 
@@ -169,10 +172,10 @@ python run_experiments.py \
 # 3. 评估结果
 python evals.py \
   --input_file results.json \
-  --output_file results/memobase_locomo_qamr_05_eval.json
+  --output_file results/memobase_locomo_qamr_02_eval.json
 
 # 4. 生成分数报告
 python generate_scores.py \
-  --input_path results/memobase_locomo_qamr_05_eval.json
+  --input_path results/memobase_locomo_qamr_02_eval.json
 ```
 

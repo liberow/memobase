@@ -106,6 +106,7 @@ class EventData(BaseModel):
     )
     event_tip: Optional[str] = Field(None, description="Event tip")
     event_tags: Optional[list[EventTag]] = Field(None, description="List of event tags")
+    value_score: Optional[float] = Field(None, description="Value score for QAMR (0.0-1.0)")
 
 
 class UserEventGistData(BaseModel):

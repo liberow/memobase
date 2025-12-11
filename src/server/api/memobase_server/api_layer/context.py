@@ -91,6 +91,10 @@ Unless the user has relevant queries, do not actively mention those memories in 
         False,
         description="If set to `True`, Memobase will fill the token window with the rest events.",
     ),
+    query_type: str = Query(
+        "open_domain",
+        description="Query type for QAMR weighting: temporal, single_hop, multi_hop, open_domain",
+    ),
 ) -> res.UserContextDataResponse:
     project_id = request.state.memobase_project_id
     topic_limits_json = topic_limits_json or "{}"
@@ -118,5 +122,6 @@ Unless the user has relevant queries, do not actively mention those memories in 
         customize_context_prompt=customize_context_prompt,
         full_profile_and_only_search_event=full_profile_and_only_search_event,
         fill_window_with_events=fill_window_with_events,
+        query_type=query_type,
     )
     return p.to_response(res.UserContextDataResponse)
