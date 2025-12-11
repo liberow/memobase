@@ -18,6 +18,13 @@ load_dotenv()
 
 
 class MemobaseSearch:
+    # LoCoMo category to QAMR query_type mapping
+    CATEGORY_TO_QUERY_TYPE = {
+        1: "single_hop",
+        2: "temporal",
+        3: "multi_hop",
+        4: "open_domain",
+    }
 
     def __init__(
         self,
@@ -44,7 +51,7 @@ class MemobaseSearch:
         self.max_memory_context_size = max_memory_context_size
         self.ANSWER_PROMPT = ANSWER_PROMPT
 
-    def search_memory(self, user_id, query, max_retries=5, retry_delay=2):
+    def search_memory(self, user_id, query, query_type="open_domain", max_retries=5, retry_delay=2):
         start_time = time.time()
         retries = 0
         real_uid = string_to_uuid(user_id)
@@ -56,6 +63,7 @@ class MemobaseSearch:
                     chats=[{"role": "user", "content": query}],
                     event_similarity_threshold=0.2,
                     fill_window_with_events=True,
+                    query_type=query_type,
                 )
                 break
             except (ServerError, httpx.ReadError, httpx.ConnectError, httpx.TimeoutException) as e:
@@ -74,11 +82,14 @@ class MemobaseSearch:
     def answer_question(
         self, speaker_1_user_id, speaker_2_user_id, question, answer, category
     ):
+        # Convert category to query_type for QAMR weighting
+        query_type = self.CATEGORY_TO_QUERY_TYPE.get(category, "open_domain")
+        
         speaker_1_memories, speaker_1_memory_time = self.search_memory(
-            speaker_1_user_id, question
+            speaker_1_user_id, question, query_type=query_type
         )
         speaker_2_memories, speaker_2_memory_time = self.search_memory(
-            speaker_2_user_id, question
+            speaker_2_user_id, question, query_type=query_type
         )
 
         template = Template(self.ANSWER_PROMPT)
