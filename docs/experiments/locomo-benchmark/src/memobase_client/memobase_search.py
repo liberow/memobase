@@ -12,6 +12,7 @@ from memobase import MemoBaseClient
 from memobase.error import ServerError
 from .memobase_add import string_to_uuid
 from dotenv import load_dotenv
+import httpx
 
 load_dotenv()
 
@@ -43,7 +44,7 @@ class MemobaseSearch:
         self.max_memory_context_size = max_memory_context_size
         self.ANSWER_PROMPT = ANSWER_PROMPT
 
-    def search_memory(self, user_id, query, max_retries=3, retry_delay=1):
+    def search_memory(self, user_id, query, max_retries=5, retry_delay=2):
         start_time = time.time()
         retries = 0
         real_uid = string_to_uuid(user_id)
@@ -57,13 +58,15 @@ class MemobaseSearch:
                     fill_window_with_events=True,
                 )
                 break
-            except ServerError as e:
-                print(f"ServerError: {e}")
-                print("Retrying...")
+            except (ServerError, httpx.ReadError, httpx.ConnectError, httpx.TimeoutException) as e:
+                print(f"Error ({type(e).__name__}): {e}")
                 retries += 1
                 if retries >= max_retries:
+                    print(f"Max retries ({max_retries}) reached, raising exception")
                     raise e
-                time.sleep(retry_delay)
+                wait_time = retry_delay * (2 ** (retries - 1))  # exponential backoff
+                print(f"Retrying in {wait_time}s... (attempt {retries}/{max_retries})")
+                time.sleep(wait_time)
 
         end_time = time.time()
         return memories, end_time - start_time

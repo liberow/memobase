@@ -4,15 +4,15 @@
 
 ### 1.1 项目环境
 
-```
+```bash
 # clone 
 git clone git@github.com:liberow/memobase.git
 
 # create env 
-conda create -n memobase_qamr python=3.11 -y
+conda create -n memobase python=3.11 -y
 
 # activate env 
-conda activate memobase_qamr
+conda activate memobase
 
 # into project
 cd memobase/
@@ -24,7 +24,8 @@ pip install -r requirements.txt
 ### 1.2. 数据存储
 
 1. Postgres
-```
+
+```bash
 apt update
 apt install -y postgresql postgresql-contrib
 
@@ -40,7 +41,7 @@ export DATABASE_URL="postgresql+psycopg2://memobase_user:memobase_pass@localhost
 
 2. Redis
 
-```
+```bash
 apt install -y redis-server
 
 # 简单方式：前台启动一个 redis（如果你是交互式终端，可以用 & 放后台）
@@ -57,13 +58,11 @@ export REDIS_URL="redis://localhost:6379/0"
 
 1. Memobase Server 启动
 
-```
+```bash
 cd ./src/server/api
 
 fastapi dev api.py --port 8019
 ```
-
-2. 
 
 ## 3. LOCOMO + QAMR 完整实验命令
 
@@ -117,7 +116,7 @@ dtype: float64
 
 ---
 
-### 阶段 2：Value Scoring 机制
+### 阶段 2：优化机制
 
 
 ---
@@ -169,276 +168,18 @@ python run_experiments.py \
 
 # 3. 评估结果
 python evals.py \
-  --input_file results/memobase_locomo_qamr_05_result.json \
-  --output_file results/memobase_locomo_qamr_05_eval.json
+  --input_file results/memobase_locomo_qamr_02_result.json \
+  --output_file results/memobase_locomo_qamr_02_eval.json
 
 # 4. 生成分数报告
 python generate_scores.py \
-  --input_path results/memobase_locomo_qamr_05_eval.json
+  --input_path results/memobase_locomo_qamr_02_eval.json
 ```
-
 
 
 ### 结果对比
 
-#### 00 vs 01
-
-1. QAMR config
-
-```yaml
-enable_qamr: true
-recency_decay_factor: 0.999  # 每小时衰减约 0.1%
-
-# 不同问题类型的权重配置 (relevance, value, recency)
-qamr_weights_temporal: [0.5, 0.0, 0.5]      # 时间问题重视 recency
-qamr_weights_single_hop: [1.0, 0.0, 0.0]    # 事实查询重视 relevance  
-qamr_weights_multi_hop: [0.7, 0.3, 0.0]     # 推理问题重视 value
-qamr_weights_open_domain: [0.6, 0.2, 0.2]   # 开放问题均衡
-```
-
-2. scores
-
-```bash
-Mean Scores Per Category:
-          bleu_score  f1_score  llm_score  count         type
-category                                                     
-1             0.2254    0.3485     0.7872    282   single_hop
-2             0.3790    0.4857     0.6449    321     temporal
-3             0.1444    0.1858     0.4271     96    multi_hop
-4             0.3532    0.4205     0.6825    841  open_domain
-
-Overall Mean Scores:
-bleu_score    0.3222
-f1_score      0.4063
-llm_score     0.6779
-dtype: float64
-```
-
-3. 和 00 的对比
-
-| 指标 | Category | 00 (Baseline) | 01 (QAMR) | 变化 | 变化率 |
-|------|----------|---------------|------------|------|--------|
-| **bleu_score** | 1 (single_hop) | 0.2354 | 0.2254 | -0.0100 | -4.2% |
-| | 2 (temporal) | 0.3237 | 0.3790 | **+0.0553** | **+17.1%** |
-| | 3 (multi_hop) | 0.1235 | 0.1444 | **+0.0209** | **+16.9%** |
-| | 4 (open_domain) | 0.3619 | 0.3532 | -0.0087 | -2.4% |
-| **f1_score** | 1 (single_hop) | 0.3557 | 0.3485 | -0.0072 | -2.0% |
-| | 2 (temporal) | 0.4241 | 0.4857 | **+0.0616** | **+14.5%** |
-| | 3 (multi_hop) | 0.1557 | 0.1858 | **+0.0301** | **+19.3%** |
-| | 4 (open_domain) | 0.4279 | 0.4205 | -0.0074 | -1.7% |
-| **llm_score** | 1 (single_hop) | 0.7908 | 0.7872 | -0.0036 | -0.5% |
-| | 2 (temporal) | 0.6511 | 0.6449 | -0.0062 | -1.0% |
-| | 3 (multi_hop) | 0.3542 | 0.4271 | **+0.0729** | **+20.6%** |
-| | 4 (open_domain) | 0.7027 | 0.6825 | -0.0202 | -2.9% |
-
-**Overall 对比：**
-
-| 指标 | 00 (Baseline) | 01 (QAMR) | 变化 | 变化率 |
-|------|---------------|-----------|------|--------|
-| bleu_score | 0.3159 | 0.3222 | +0.0063 | +2.0% |
-| f1_score | 0.3969 | 0.4063 | +0.0094 | +2.4% |
-| llm_score | 0.6864 | 0.6779 | -0.0085 | -1.2% |
-
-**分析总结：**
-
-1. **temporal（时序问题）提升显著**：bleu +17.1%, f1 +14.5%，说明 QAMR 机制帮助过滤了过时信息，提升了时序相关问答的准确性
-2. **multi_hop（多跳推理）全面提升**：bleu +16.9%, f1 +19.3%, llm_score +20.6%，QAMR 机制减少了噪声信息干扰
-3. **single_hop 和 open_domain 略有下降**：可能是因为 QAMR 权重配置对简单检索任务有轻微负面影响
-4. **整体 f1_score 提升 2.4%**：表明 QAMR 机制对检索精度有正向作用
-5. **llm_score 略降 1.2%**：可能需要调整 alpha 参数以平衡
-
----
-
-#### 02 vs 00 vs 01
-
-1. config
-
-```yaml
-# 三因素检索: Relevance + Value + Recency 
-enable_qamr: true
-recency_decay_factor: 0.995  # 每小时衰减约0.5%
-
-# 不同问题类型的权重配置 (relevance, value, recency)
-qamr_weights_temporal: [0.3, 0.1, 0.6]      # 时间问题重视 recency
-qamr_weights_single_hop: [0.7, 0.2, 0.1]    # 事实查询重视 relevance  
-qamr_weights_multi_hop: [0.4, 0.5, 0.1]     # 推理问题重视 value
-qamr_weights_open_domain: [0.5, 0.3, 0.2]   # 开放问题均衡
-```
-
-2. scores
-
-```bash
-(memobase_qamr) root@c81ab3b21da2:/workspace/liber/memory/memobase/docs/experiments/locomo-benchmark# python generate_scores.py \
-  --input_path results/memobase_locomo_qamr_02_eval.json
-Mean Scores Per Category:
-          bleu_score  f1_score  llm_score  count         type
-category                                                     
-1             0.2141    0.3400     0.7411    282   single_hop
-2             0.2520    0.3152     0.6854    321     temporal
-3             0.1041    0.1419     0.3438     96    multi_hop
-4             0.3442    0.4117     0.6825    841  open_domain
-
-Overall Mean Scores:
-bleu_score    0.2862
-f1_score      0.3616
-llm_score     0.6727
-dtype: float64
-```
-
-3. 对比
-
-**按类别对比表：**
-
-| 指标 | Category | 00 (Baseline) | 01 (Soft QAMR) | 02 (QAMR) | 01 vs 00 | 02 vs 00 | 02 vs 01 |
-|------|----------|---------------|----------------|-----------|----------|----------|----------|
-| **bleu_score** | 1 (single_hop) | 0.2354 | 0.2254 | 0.2141 | -4.2% | -9.0% | -5.0% |
-| | 2 (temporal) | 0.3237 | 0.3790 | 0.2520 | **+17.1%** | -22.1% | -33.5% |
-| | 3 (multi_hop) | 0.1235 | 0.1444 | 0.1041 | **+16.9%** | -15.7% | -27.9% |
-| | 4 (open_domain) | 0.3619 | 0.3532 | 0.3442 | -2.4% | -4.9% | -2.5% |
-| **f1_score** | 1 (single_hop) | 0.3557 | 0.3485 | 0.3400 | -2.0% | -4.4% | -2.4% |
-| | 2 (temporal) | 0.4241 | 0.4857 | 0.3152 | **+14.5%** | -25.7% | -35.1% |
-| | 3 (multi_hop) | 0.1557 | 0.1858 | 0.1419 | **+19.3%** | -8.9% | -23.6% |
-| | 4 (open_domain) | 0.4279 | 0.4205 | 0.4117 | -1.7% | -3.8% | -2.1% |
-| **llm_score** | 1 (single_hop) | 0.7908 | 0.7872 | 0.7411 | -0.5% | -6.3% | -5.9% |
-| | 2 (temporal) | 0.6511 | 0.6449 | 0.6854 | -1.0% | **+5.3%** | **+6.3%** |
-| | 3 (multi_hop) | 0.3542 | 0.4271 | 0.3438 | **+20.6%** | -2.9% | -19.5% |
-| | 4 (open_domain) | 0.7027 | 0.6825 | 0.6825 | -2.9% | -2.9% | 0.0% |
-
-**Overall 对比：**
-
-| 指标 | 00 (Baseline) | 01 (Soft QAMR) | 02 (QAMR) | 01 vs 00 | 02 vs 00 | 02 vs 01 |
-|------|---------------|------------------|-----------|----------|----------|----------|
-| bleu_score | 0.3159 | 0.3222 | 0.2862 | +2.0% | -9.4% | -11.2% |
-| f1_score | 0.3969 | 0.4063 | 0.3616 | +2.4% | -8.9% | -11.0% |
-| llm_score | 0.6864 | 0.6779 | 0.6727 | -1.2% | -2.0% | -0.8% |
-
-**分析总结：**
-
-1. **02 (QAMR) 整体表现不如预期**：
-   - 相比 00 Baseline，所有指标全面下降（bleu -9.4%, f1 -8.9%, llm -2.0%）
-   - 相比 01 Soft QAMR，下降更明显（bleu -11.2%, f1 -11.0%）
-
-2. **02 的唯一亮点 - temporal 的 llm_score**：
-   - temporal 类别的 llm_score 提升 +5.3%（vs 00）和 +6.3%（vs 01）
-   - 说明 QAMR 的 recency 权重配置 `[0.3, 0.1, 0.6]` 对时序问题的语义理解有帮助
-
-3. **02 在 temporal 类别的精确匹配指标大幅下降**：
-   - bleu_score: -22.1%（vs 00），-33.5%（vs 01）
-   - f1_score: -25.7%（vs 00），-35.1%（vs 01）
-   - 这与 llm_score 提升形成矛盾，可能是检索到的内容语义相关但文本匹配度低
-
-4. **01 仍是最佳配置**：
-   - 在 temporal 和 multi_hop 类别表现最好
-   - 整体 bleu 和 f1 均优于 baseline
-
-
-
-#### 03 vs 02
-
-1. config
-
-```yaml
-# 三因素检索: Relevance + Value + Recency 
-enable_qamr: true
-recency_decay_factor: 0.995  # 每小时衰减约0.5%
-
-# 不同问题类型的权重配置 (relevance, value, recency)
-qamr_weights_temporal: [1.0, 0.0, 0.0]      # 时间问题重视 recency
-qamr_weights_single_hop: [1.0, 0.0, 0.0]    # 事实查询重视 relevance  
-qamr_weights_multi_hop: [1.0, 0.0, 0.0]     # 推理问题重视 value
-qamr_weights_open_domain: [1.0, 0.0, 0.0]   # 开放问题均衡
-```
-
-2. score
-
-```bash
-Mean Scores Per Category:
-          bleu_score  f1_score  llm_score  count         type
-category                                                     
-1             0.2073    0.3312     0.7411    282   single_hop
-2             0.2529    0.3187     0.6667    321     temporal
-3             0.1041    0.1399     0.3750     96    multi_hop
-4             0.3411    0.4098     0.6849    841  open_domain
-
-Overall Mean Scores:
-bleu_score    0.2834
-f1_score      0.3596
-llm_score     0.6721
-dtype: float64
-```
-
-#### 04 vs 03
-
-1. config 
-
-```yaml
-
-# 三因素检索: Relevance + Value + Recency 
-enable_qamr: true
-recency_decay_factor: 0.999  # 每小时衰减约0.1%
-
-# 不同问题类型的权重配置 (relevance, value, recency)
-qamr_weights_temporal: [0.7, 0.0, 0.3]      # 时间问题重视 recency
-qamr_weights_single_hop: [1.0, 0.0, 0.0]    # 事实查询重视 relevance  
-qamr_weights_multi_hop: [0.7, 0.3, 0.0]     # 推理问题重视 value
-qamr_weights_open_domain: [0.7, 0.2, 0.1]   # 开放问题均衡
-```
-
-2. scores
-
-```bash
-Mean Scores Per Category:
-          bleu_score  f1_score  llm_score  count         type
-category                                                     
-1             0.2158    0.3404     0.7482    282   single_hop
-2             0.2533    0.3177     0.6511    321     temporal
-3             0.1111    0.1438     0.3438     96    multi_hop
-4             0.3447    0.4121     0.6730    841  open_domain
-
-Overall Mean Scores:
-bleu_score    0.2875
-f1_score      0.3625
-llm_score     0.6617
-dtype: float64
-```
-
-
-#### 05 vs 04
-
-1. config
-
-```yaml
-# 三因素检索: Relevance + Value + Recency 
-enable_qamr: true
-recency_decay_factor: 0.999  # 每小时衰减约0.1%
-
-# 不同问题类型的权重配置 (relevance, value, recency)
-qamr_weights_temporal: [0.5, 0.0, 0.5]      # 时间问题重视 recency
-qamr_weights_single_hop: [1.0, 0.0, 0.0]    # 事实查询重视 relevance  
-qamr_weights_multi_hop: [0.7, 0.3, 0.0]     # 推理问题重视 value
-qamr_weights_open_domain: [0.6, 0.2, 0.2]   # 开放问题均衡
-```
-
-2. scores
-
-```bash
-Mean Scores Per Category:
-          bleu_score  f1_score  llm_score  count         type
-category                                                     
-1             0.2057    0.3291     0.7447    282   single_hop
-2             0.2601    0.3273     0.6885    321     temporal
-3             0.1030    0.1332     0.3333     96    multi_hop
-4             0.3460    0.4137     0.6849    841  open_domain
-
-Overall Mean Scores:
-bleu_score    0.2872
-f1_score      0.3627
-llm_score     0.6747
-dtype: float64
-```
-
-
-## 06
+#### 01
 
 1. config
 
@@ -469,7 +210,6 @@ qamr_weights_temporal: [0.5, 0.0, 0.5]      # 时间问题重视 recency
 qamr_weights_single_hop: [1.0, 0.0, 0.0]    # 事实查询重视 relevance  
 qamr_weights_multi_hop: [0.7, 0.3, 0.0]     # 推理问题重视 value
 qamr_weights_open_domain: [0.6, 0.2, 0.2]   # 开放问题均衡
-
 ```
 
 2. scores
@@ -487,5 +227,56 @@ Overall Mean Scores:
 bleu_score    0.3050
 f1_score      0.3798
 llm_score     0.6649
+dtype: float64
+```
+
+#### 02
+
+1. config
+
+```yaml
+# Language
+language: en  # LoCoMo 是英文数据集，使用英文 prompt
+
+# LLM
+llm_api_key: "182b8a28-3392-4490-90a0-fe4cb6ef5bb2"                
+llm_base_url: "https://ark.cn-beijing.volces.com/api/v3"
+best_llm_model: "doubao-1-5-pro-32k-250115"
+thinking_llm_model: "doubao-1-5-pro-32k-250115"
+value_scorer_model: "doubao-1-5-pro-32k-250115"    
+
+# Embedding
+embedding_provider: openai
+embedding_api_key: "182b8a28-3392-4490-90a0-fe4cb6ef5bb2"          
+embedding_model: "doubao-embedding-large-text-240915"
+embedding_base_url: "https://ark.cn-beijing.volces.com/api/v3"
+embedding_dim: 4096
+
+# QAMR (Query-Aware Memory Retrieval)
+enable_qamr: true
+recency_decay_factor: 0.999  # 每小时衰减约 0.1%
+
+# 不同问题类型的权重配置 (relevance, value, recency)
+qamr_weights_temporal: [0.5, 0.0, 0.5]      # 时间问题重视 recency
+qamr_weights_single_hop: [1.0, 0.0, 0.0]    # 事实查询重视 relevance  
+qamr_weights_multi_hop: [0.7, 0.3, 0.0]     # 推理问题重视 value
+qamr_weights_open_domain: [0.6, 0.2, 0.2]   # 开放问题均衡
+```
+
+2. scores
+
+```bash
+Mean Scores Per Category:
+          bleu_score  f1_score  llm_score  count         type
+category                                                     
+1             0.2414    0.3717     0.7720    250   single_hop
+2             0.3538    0.4709     0.6367    289     temporal
+3             0.1241    0.1613     0.3596     89    multi_hop
+4             0.3573    0.4281     0.7188    754  open_domain
+
+Overall Mean Scores:
+bleu_score    0.3206
+f1_score      0.4097
+llm_score     0.6881
 dtype: float64
 ```
