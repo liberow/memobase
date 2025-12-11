@@ -246,8 +246,8 @@ async def search_user_events(
         return query_embeddings
     query_embedding = query_embeddings.data()[0]
 
-    # When QAMR is enabled, fetch more candidates for reranking
-    fetch_limit = topk * 3 if CONFIG.enable_qamr else topk
+    # Fetch topk candidates (same as Soft mode for fair comparison)
+    fetch_limit = topk
 
     stmt = (
         select(

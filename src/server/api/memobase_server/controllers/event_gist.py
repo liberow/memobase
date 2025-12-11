@@ -100,8 +100,8 @@ async def search_user_event_gists(
     # Store the similarity expression to avoid recomputation
     similarity_expr = 1 - UserEventGist.embedding.cosine_distance(query_embedding)
 
-    # When QAMR is enabled, fetch more candidates for reranking
-    fetch_limit = topk * 3 if CONFIG.enable_qamr else topk
+    # Fetch topk candidates (same as Soft mode for fair comparison)
+    fetch_limit = topk
 
     stmt = (
         select(
