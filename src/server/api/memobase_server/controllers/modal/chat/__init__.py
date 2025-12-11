@@ -18,6 +18,7 @@ from .organize import organize_profiles
 from .types import MergeAddResult
 from .event_summary import tag_event
 from .entry_summary import entry_chat_summary
+from ....value_scorer import score_session_event_value
 
 
 def truncate_chat_blobs(
@@ -209,6 +210,18 @@ async def handle_session_event(
     event_tags: list | None,
     config: ProfileConfig,
 ) -> Promise[str]:
+    # Score the event value for QAMR retrieval
+    value_score = await score_session_event_value(
+        project_id=project_id,
+        user_id=user_id,
+        content=memo_str,
+    )
+    
+    TRACE_LOG.info(
+        project_id,
+        user_id,
+        f"Event value score: {value_score:.3f}",
+    )
 
     eid = await append_user_event(
         user_id,
@@ -217,6 +230,7 @@ async def handle_session_event(
             "event_tip": memo_str,
             "event_tags": event_tags,
             "profile_delta": delta_profile_data,
+            "value_score": value_score,  # Store value score for QAMR
         },
     )
 

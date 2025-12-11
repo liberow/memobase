@@ -130,6 +130,7 @@ class Config:
     qamr_weights_single_hop: tuple = (0.7, 0.2, 0.1)   # 事实查询重视 relevance
     qamr_weights_multi_hop: tuple = (0.4, 0.5, 0.1)    # 推理问题重视 value
     qamr_weights_open_domain: tuple = (0.5, 0.3, 0.2)  # 开放问题均衡
+
     
     # Telemetry
     telemetry_deployment_environment: str = "local"

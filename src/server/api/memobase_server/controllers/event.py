@@ -282,11 +282,21 @@ async def search_user_events(
         
         # Apply QAMR reranking if enabled
         if CONFIG.enable_qamr and candidates:
+            # Helper function to extract value_score from event_data
+            def get_value_score(item):
+                event_data = item["event"].event_data
+                if event_data and isinstance(event_data, dict):
+                    try:
+                        return float(event_data.get("value_score", 1.0))
+                    except (TypeError, ValueError):
+                        return 1.0
+                return 1.0
+            
             reranked = rerank_by_qamr(
                 items=candidates,
                 get_similarity=lambda x: x["similarity"],
                 get_created_at=lambda x: x["event"].created_at,
-                get_value_score=None,  # TODO: integrate value scoring
+                get_value_score=get_value_score,
                 query_type=query_type,
                 topk=topk,
             )

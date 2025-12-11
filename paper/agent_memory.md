@@ -168,12 +168,12 @@ python run_experiments.py \
 
 # 3. 评估结果
 python evals.py \
-  --input_file results/memobase_locomo_qamr_02_result.json \
-  --output_file results/memobase_locomo_qamr_02_eval.json
+  --input_file results/memobase_locomo_qamr_03_result.json \
+  --output_file results/memobase_locomo_qamr_03_eval.json
 
 # 4. 生成分数报告
 python generate_scores.py \
-  --input_path results/memobase_locomo_qamr_02_eval.json
+  --input_path results/memobase_locomo_qamr_03_eval.json
 ```
 
 
@@ -278,5 +278,30 @@ Overall Mean Scores:
 bleu_score    0.3206
 f1_score      0.4097
 llm_score     0.6881
+dtype: float64
+```
+
+#### 03
+
+1. config 
+
+```yaml
+```
+
+2. scores
+
+```bash
+Mean Scores Per Category:
+          bleu_score  f1_score  llm_score  count         type
+category                                                     
+1             0.2606    0.3780     0.7469    245   single_hop
+2             0.3903    0.4978     0.6655    281     temporal
+3             0.0967    0.1339     0.3882     85    multi_hop
+4             0.3730    0.4471     0.7247    730  open_domain
+
+Overall Mean Scores:
+bleu_score    0.3386
+f1_score      0.4253
+llm_score     0.6950
 dtype: float64
 ```

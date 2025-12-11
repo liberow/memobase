@@ -1,5 +1,5 @@
 from pydantic import ValidationError
-from ..models.database import UserEventGist
+from ..models.database import UserEventGist, UserEvent
 from ..models.response import UserEventGistsData, UserEventGistData
 from ..models.utils import Promise, CODE
 from ..connectors import Session
@@ -125,6 +125,7 @@ async def search_user_event_gists(
         
         # Build candidate list with similarity scores
         candidates = []
+        event_ids = set()
         for row in result:
             user_event: UserEventGist = row[0]
             similarity: float = row[1]
@@ -132,14 +133,34 @@ async def search_user_event_gists(
                 "event": user_event,
                 "similarity": similarity,
             })
+            event_ids.add(user_event.event_id)
+        
+        # Fetch value_scores from parent UserEvent records
+        value_score_map = {}
+        if CONFIG.enable_qamr and event_ids:
+            event_rows = (
+                session.query(UserEvent.id, UserEvent.event_data)
+                .filter(UserEvent.id.in_(event_ids))
+                .all()
+            )
+            for eid, event_data in event_rows:
+                try:
+                    value_score_map[eid] = float(event_data.get("value_score", 1.0))
+                except (TypeError, ValueError, AttributeError):
+                    value_score_map[eid] = 1.0
         
         # Apply QAMR reranking if enabled
         if CONFIG.enable_qamr and candidates:
+            # Helper function to get value_score from parent event
+            def get_value_score(item):
+                event_id = item["event"].event_id
+                return value_score_map.get(event_id, 1.0)
+            
             reranked = rerank_by_qamr(
                 items=candidates,
                 get_similarity=lambda x: x["similarity"],
                 get_created_at=lambda x: x["event"].created_at,
-                get_value_score=None,  # TODO: integrate value scoring
+                get_value_score=get_value_score,
                 query_type=query_type,
                 topk=topk,
             )

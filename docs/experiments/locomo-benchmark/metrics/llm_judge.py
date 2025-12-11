@@ -1,4 +1,5 @@
 import os
+import re
 from openai import OpenAI
 import json
 from collections import defaultdict
@@ -57,19 +58,35 @@ def evaluate_llm_judge(question, gold_answer, generated_answer):
     )
 
     # label = json.loads(response.choices[0].message.content)["label"]
+
+    content = response.choices[0].message.content
+    label = None
+
+    # 1. 解析 JSON 中的 label
     try:
-        label = json.loads(response.choices[0].message.content)["label"]
-    except json.JSONDecodeError:
-        print(f"Warning: Could not parse label from response: {response.choices[0].message.content}")
-        # 尝试从文本中提取
-        content = response.choices[0].message.content
-        if "CORRECT" in content.upper():
+        label = json.loads(content)["label"]
+    except (json.JSONDecodeError, KeyError):
+        pass
+
+    # 2. 用正则提取 JSON 中的 label
+    if label is None:
+        json_match = re.search(r'"label"\s*:\s*"(CORRECT|WRONG)"', content, re.IGNORECASE)
+        if json_match:
+            label = json_match.group(1).upper()
+
+    # 3. 从文本中查找最后出现的 CORRECT 或 WRONG
+    if label is None:
+        content_upper = content.upper()
+        last_correct = content_upper.rfind("CORRECT")
+        last_wrong = content_upper.rfind("WRONG")
+        
+        if last_correct > last_wrong:
             label = "CORRECT"
-        elif "WRONG" in content.upper():
+        elif last_wrong >= 0:
             label = "WRONG"
         else:
-            print(f"Warning: Could not parse label from response: {content}")
-            label = "WRONG"  # 默认为 WRONG
+            print(f"Warning: Could not find CORRECT or WRONG in response: {content[:200]}...")
+            label = "WRONG"
 
     return 1 if label == "CORRECT" else 0
 

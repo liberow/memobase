@@ -18,9 +18,15 @@ async def score_session_event_value(
     Score how valuable a session-level event is for long-term memory.
 
     The score is in [0.0, 1.0]. Higher score means we should keep the event.
-    This score is used as the Value factor in QAMR retrieval.
+    This helper is intentionally lightweight and only used when the
+    QAMR feature is enabled.
     """
+    # If QAMR is disabled, skip value scoring
+    if not CONFIG.enable_qamr:
+        return 1.0
+
     # Fast path: trivial acknowledgements and chit-chat are always low value.
+    # 中文标记使用子串匹配，英文 "ok"/"OK" 使用完整单词匹配（避免误杀 "took", "book", "Tokyo" 等）
     zh_trivial_markers = ["哈哈", "嗯嗯", "好啊", "收到"]
     en_trivial_patterns = [r"\bok\b", r"\bOK\b"]
     
