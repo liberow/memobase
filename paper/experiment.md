@@ -171,3 +171,127 @@ f1_score      0.4068
 llm_score     0.6877
 dtype: float64
 ```
+
+
+### 04 
+
+说明：add 阶段使用的是 feature/value 分支的代码， search/eval 使用的是 feature/qamr 分支的代码
+
+1. config
+
+```yaml
+# Language
+language: en  # LoCoMo 是英文数据集，使用英文 prompt
+
+# LLM
+llm_api_key: "182b8a28-3392-4490-90a0-fe4cb6ef5bb2"                
+llm_base_url: "https://ark.cn-beijing.volces.com/api/v3"
+best_llm_model: "doubao-1-5-pro-32k-250115"
+thinking_llm_model: "doubao-1-5-pro-32k-250115"
+value_scorer_model: "doubao-1-5-pro-32k-250115"    
+
+# Embedding
+embedding_provider: openai
+embedding_api_key: "182b8a28-3392-4490-90a0-fe4cb6ef5bb2"          
+embedding_model: "doubao-embedding-large-text-240915"
+embedding_base_url: "https://ark.cn-beijing.volces.com/api/v3"
+embedding_dim: 4096
+
+# QAMR (Query-Aware Memory Retrieval)
+enable_qamr: true
+recency_decay_factor: 0.999  # 每小时衰减约 0.1%
+
+# 不同问题类型的权重配置 (relevance, value, recency)
+qamr_weights_temporal: [0.7, 0.3, 0.0]      # 时间问题重视 recency
+qamr_weights_single_hop: [0.7, 0.3, 0.0]    # 事实查询重视 relevance  
+qamr_weights_multi_hop: [0.7, 0.3, 0.0]     # 推理问题重视 value
+qamr_weights_open_domain: [0.7, 0.3, 0.0]   # 开放问题均衡
+```
+
+2. scores
+
+```bash
+Mean Scores Per Category:
+          bleu_score  f1_score  llm_score  count         type
+category                                                     
+1             0.2397    0.3660     0.7755    245   single_hop
+2             0.3370    0.4437     0.6597    288     temporal
+3             0.1480    0.1855     0.4096     83    multi_hop
+4             0.3624    0.4327     0.7096    768  open_domain
+
+Overall Mean Scores:
+bleu_score    0.3225
+f1_score      0.4084
+llm_score     0.6929
+dtype: float64
+```
+
+```bash
+Mean Scores Per Category:
+          bleu_score  f1_score  llm_score  count         type
+category                                                     
+1             0.2327    0.3588     0.7837    282   single_hop
+2             0.3499    0.4574     0.6604    321     temporal
+3             0.1281    0.1630     0.4167     96    multi_hop
+4             0.3649    0.4346     0.6992    841  open_domain
+
+Overall Mean Scores:
+bleu_score    0.3228
+f1_score      0.4085
+llm_score     0.6890
+dtype: float64
+```
+
+
+### 05
+
+说明：add/search/eval 使用的是 feature/qamr 分支的代码
+
+1. config
+
+```yaml
+# Language
+language: en  # LoCoMo 是英文数据集，使用英文 prompt
+
+# LLM
+llm_api_key: "182b8a28-3392-4490-90a0-fe4cb6ef5bb2"                
+llm_base_url: "https://ark.cn-beijing.volces.com/api/v3"
+best_llm_model: "doubao-1-5-pro-32k-250115"
+thinking_llm_model: "doubao-1-5-pro-32k-250115"
+value_scorer_model: "doubao-1-5-pro-32k-250115"    
+
+# Embedding
+embedding_provider: openai
+embedding_api_key: "182b8a28-3392-4490-90a0-fe4cb6ef5bb2"          
+embedding_model: "doubao-embedding-large-text-240915"
+embedding_base_url: "https://ark.cn-beijing.volces.com/api/v3"
+embedding_dim: 4096
+
+# QAMR (Query-Aware Memory Retrieval)
+enable_qamr: true
+recency_decay_factor: 0.999  # 每小时衰减约 0.1%
+
+# 不同问题类型的权重配置 (relevance, value, recency)
+qamr_weights_temporal: [0.7, 0.3, 0.0]      # 时间问题重视 recency
+qamr_weights_single_hop: [0.7, 0.3, 0.0]    # 事实查询重视 relevance  
+qamr_weights_multi_hop: [0.7, 0.3, 0.0]     # 推理问题重视 value
+qamr_weights_open_domain: [0.7, 0.3, 0.0]   # 开放问题均衡
+```
+
+2. scores
+
+```bash
+Mean Scores Per Category:
+          bleu_score  f1_score  llm_score  count         type
+category                                                     
+1             0.2323    0.3546     0.7801    282   single_hop
+2             0.3400    0.4429     0.6511    321     temporal
+3             0.1264    0.1631     0.3750     96    multi_hop
+4             0.3581    0.4275     0.6980    841  open_domain
+
+Overall Mean Scores:
+bleu_score    0.3168
+f1_score      0.4009
+llm_score     0.6831
+dtype: float64
+```
