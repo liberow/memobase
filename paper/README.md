@@ -172,10 +172,10 @@ python run_experiments.py \
 # 3. 评估结果
 python evals.py \
   --input_file results.json \
-  --output_file results/memobase_locomo_qamr_02_eval.json
+  --output_file results/memobase_locomo_qamr_03_eval.json
 
 # 4. 生成分数报告
 python generate_scores.py \
-  --input_path results/memobase_locomo_qamr_02_eval.json
+  --input_path results/memobase_locomo_qamr_03_eval.json
 ```
 
