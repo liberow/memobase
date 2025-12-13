@@ -190,12 +190,12 @@ python run_experiments.py \
 
 # 3. 评估结果
 python evals.py \
-  --input_file results/memobase_locomo_value_04_result.json \
-  --output_file results/memobase_locomo_value_04_eval.json
+  --input_file results.json \
+  --output_file results/memobase_locomo_value_01_eval.json
 
 # 4. 生成分数报告
 python generate_scores.py \
-  --input_path results/memobase_locomo_value_04_eval.json
+  --input_path results/memobase_locomo_value_01_eval.json
 ```
 
 
@@ -406,5 +406,52 @@ Overall Mean Scores:
 bleu_score    0.2860
 f1_score      0.3618
 llm_score     0.6695
+dtype: float64
+```
+
+
+#### 05 
+
+```yaml
+# Language
+language: en  # LoCoMo 是英文数据集，使用英文 prompt
+
+# LLM
+llm_api_key: "182b8a28-3392-4490-90a0-fe4cb6ef5bb2"                
+llm_base_url: "https://ark.cn-beijing.volces.com/api/v3"
+best_llm_model: "doubao-1-5-pro-32k-250115"
+thinking_llm_model: "doubao-1-5-pro-32k-250115"
+value_scorer_model: "doubao-1-5-pro-32k-250115"    
+
+# Embedding
+embedding_provider: openai
+embedding_api_key: "182b8a28-3392-4490-90a0-fe4cb6ef5bb2"          
+embedding_model: "doubao-embedding-large-text-240915"
+embedding_base_url: "https://ark.cn-beijing.volces.com/api/v3"
+embedding_dim: 4096
+
+# Value Scoring
+# value_scoring_mode: off = 禁用, soft = 检索时重排序, hard = 写入时删除
+value_scoring_mode: "soft"
+soft_rerank_alpha: 0.7      # 综合得分权重：α * similarity + (1-α) * value_score
+value_score_threshold_event: 0.15    # hard 模式的阈值
+```
+
+
+2. scores
+
+```bash
+Mean Scores Per Category:
+          bleu_score  f1_score  llm_score  count         type
+category                                                     
+1             0.2332    0.3557     0.7801    282   single_hop
+2             0.3469    0.4616     0.6636    321     temporal
+3             0.1396    0.1782     0.4479     96    multi_hop
+4             0.3697    0.4396     0.7039    841  open_domain
+
+Overall Mean Scores:
+bleu_score    0.3256
+f1_score      0.4125
+llm_score     0.6935
 dtype: float64
 ```
