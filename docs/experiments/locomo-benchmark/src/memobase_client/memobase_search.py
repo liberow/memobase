@@ -7,7 +7,7 @@ import time
 from jinja2 import Template
 from openai import OpenAI
 from prompts import ANSWER_PROMPT_GRAPH, ANSWER_PROMPT
-from mem0 import MemoryClient
+# from mem0 import MemoryClient
 from memobase import MemoBaseClient
 from memobase.error import ServerError
 from .memobase_add import string_to_uuid
