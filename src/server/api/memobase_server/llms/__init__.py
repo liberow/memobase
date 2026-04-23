@@ -52,7 +52,13 @@ async def llm_complete(
             + "\n".join([m["content"] for m in history_messages])
         )
     )
-    out_tokens = len(get_encoded_tokens(results))
+
+    # Check if results is None or empty (e.g., due to content policy violation)
+    if results is None:
+        LOG.warning(f"LLM returned None response for project {project_id}, model {use_model}")
+        out_tokens = 0
+    else:
+        out_tokens = len(get_encoded_tokens(results))
 
     # await project_cost_token_billing(project_id, in_tokens, out_tokens)
     asyncio.create_task(project_cost_token_billing(project_id, in_tokens, out_tokens))
@@ -79,7 +85,17 @@ async def llm_complete(
     )
 
     if not json_mode:
+        if results is None:
+            return Promise.reject(
+                CODE.SERVICE_UNAVAILABLE,
+                "LLM returned empty response (possibly due to content policy violation)"
+            )
         return Promise.resolve(results)
+    if results is None:
+        return Promise.reject(
+            CODE.SERVICE_UNAVAILABLE,
+            "LLM returned empty response (possibly due to content policy violation)"
+        )
     parse_dict = convert_response_to_json(results)
     if parse_dict is not None:
         return Promise.resolve(parse_dict)

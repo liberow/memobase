@@ -1,9 +1,13 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "memobase_server"
 version = "0.1.0"
 description = "Memobase Server"
-readme = "README.md"
-requires-python = ">=3.12"
+readme = "readme.md"
+requires-python = ">=3.11"
 dependencies = [
     "fastapi[standard]>=0.116.1",
     "numpy>=2.3.1",
@@ -31,3 +35,7 @@ dev = [
     "pytest-asyncio>=1.1.0",
     "pytest-cov>=6.2.1",
 ]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["memobase_server*"]

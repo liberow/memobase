@@ -6,11 +6,11 @@
 
 #### 中文
 
-基于查询感知的大语言模型智能体长期记忆检索优化方法研究
+超越语义检索：多维度智能体记忆方法
 
 #### 英文
 
-Research on Query-Aware Long-term Memory Retrieval Optimization for LLM-based Agents
+Beyond Semantic Retrieval: Multi-dimensional Memory Management for LLM Agents
 
 ## 二、选题
 
@@ -18,23 +18,23 @@ Research on Query-Aware Long-term Memory Retrieval Optimization for LLM-based Ag
 
 #### 研究意义
 
-大语言模型（Large Language Model, LLM）智能体正在成为人工智能应用的核心范式。然而，当前LLM智能体面临的一个关键挑战是**长期记忆管理**——如何在长周期交互中有效存储、组织和检索历史信息。传统的检索增强生成（RAG）方法仅依赖语义相似度进行记忆检索，忽略了以下关键因素：
+大语言模型（Large Language Model, LLM）智能体正在成为人工智能应用的核心范式。然而，当前LLM智能体面临的一个关键挑战是**长期记忆管理**——如何在长周期交互中有效存储、组织和检索历史信息。传统的检索增强生成（RAG）方法主要依赖语义相似度进行记忆检索，难以应对以下关键挑战：
 
 1. **时间敏感性**：用户的偏好、状态和环境会随时间变化，最新信息往往更具参考价值
 2. **信息质量差异**：不同记忆片段的信息密度和实用价值差异显著
 3. **查询类型多样性**：不同类型的问题（事实查询、时间推理、多跳推理等）需要不同的检索策略
 
-本研究旨在解决LLM智能体长期记忆检索中的上述问题，提升智能体在长周期对话场景下的理解和回答能力，为构建更智能、更个性化的AI助手奠定基础。
+本研究旨在提出一种超越传统语义检索的多维度记忆管理方法，通过融合语义相关性、信息价值和时间新近性三个维度，提升智能体在长周期对话场景下的记忆能力和回答质量，为构建更智能、更个性化的AI助手奠定基础。
 
 #### 创新点
 
-1. **查询感知的多维度记忆检索框架（QAMR）**：提出Quality-Aware Memory Retrieval方法，将语义相关性（Relevance）、信息价值（Value）和时间新近性（Recency）三个维度融合为统一的检索评分机制
+1. **超越语义检索的多维度记忆框架（QAMR）**：提出Query-Aware Memory Retrieval方法，突破传统单一语义相似度的局限，将语义相关性（Relevance）、信息价值（Value）和时间新近性（Recency）三个维度融合为统一的记忆评分与检索机制
 
-2. **动态权重自适应策略**：根据查询类型（temporal、single_hop、multi_hop、open_domain）自动调整三个维度的权重配比，实现针对性的检索优化
+2. **动态权重自适应策略**：根据查询类型（temporal、single_hop、multi_hop、open_domain）自动调整三个维度的权重配比，实现针对不同查询场景的精准记忆管理
 
-3. **LLM驱动的记忆价值评估**：利用大语言模型对记忆片段进行价值评分，识别高信息密度的关键记忆，过滤低价值的闲聊内容
+3. **LLM驱动的记忆价值评估**：利用大语言模型对记忆片段进行价值评分，识别高信息密度的关键记忆，过滤低价值的闲聊内容，提升记忆质量
 
-4. **端到端的智能体记忆系统实现**：在开源项目Memobase基础上实现完整的QAMR系统，并在LoCoMo长对话基准测试上验证有效性
+4. **端到端的智能体记忆系统实现**：在开源项目Memobase基础上实现完整的QAMR系统，并在LoCoMo长对话基准测试上验证有效性，多跳推理问题准确率提升11.7%
 
 ### 2.国内外研究综述
 
@@ -65,9 +65,9 @@ Research on Query-Aware Long-term Memory Retrieval Optimization for LLM-based Ag
 
 #### 现有研究的不足
 
-1. 现有RAG方法主要针对静态文档库，未充分考虑时间因素
-2. 检索策略缺乏对查询类型的感知和适应
-3. 记忆质量评估多依赖启发式规则，缺乏智能化手段
+1. 现有RAG方法主要依赖单一语义相似度，未充分考虑时间因素和信息质量差异
+2. 检索策略缺乏对查询类型的感知和适应，无法针对不同问题采用最优策略
+3. 记忆质量评估多依赖启发式规则，缺乏智能化、自适应的评估手段
 
 ### 3.主要参考文献
 
@@ -97,17 +97,17 @@ Research on Query-Aware Long-term Memory Retrieval Optimization for LLM-based Ag
 
 #### 研究目标
 
-本研究旨在设计并实现一种查询感知的长期记忆检索优化方法（QAMR），提升LLM智能体在长周期对话场景中的记忆检索精度和问答质量。具体目标包括：
+本研究旨在设计并实现一种超越传统语义检索的多维度智能体记忆方法（QAMR），提升LLM智能体在长周期对话场景中的记忆管理能力和问答质量。具体目标包括：
 
 1. 在LoCoMo长对话基准测试上，整体问答准确率（LLM Score）提升5%以上
-2. 在时间相关问题（temporal）类别上获得显著改进
-3. 构建可复用的开源记忆检索框架
+2. 在多跳推理问题（multi_hop）类别上获得显著改进
+3. 构建可复用的开源多维度记忆管理框架
 
 #### 研究内容
 
 **（1）多维度记忆评分机制设计**
 
-提出QAMR（Query-Aware Memory Retrieval）评分公式：
+提出QAMR（Query-Aware Memory Retrieval）评分公式，突破传统单一语义相似度的局限：
 
 $$Score_{QAMR} = w_r \cdot Relevance + w_v \cdot Value + w_t \cdot Recency$$
 
