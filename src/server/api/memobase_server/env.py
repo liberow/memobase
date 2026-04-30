@@ -123,9 +123,13 @@ class Config:
 
     # QAMR: Quality-Aware Memory Retrieval (Relevance, Value, Recency) rerank events
     enable_qamr: bool = True
+    # 是否启用 LLM 任务类型分类（当 query_type 缺失时，用 LLM 判断 temporal/single_hop/multi_hop/open_domain）
+    enable_llm_weight_prediction: bool = False
+    # LLM 任务类型分类使用的模型
+    llm_weight_prediction_model: str = "gpt-4o-mini"
     # Recency 衰减因子 (0.995 表示每小时衰减约 0.5%)
     recency_decay_factor: float = 0.995
-    # 不同问题类型的权重配置 (relevance, value, recency)
+    # 不同问题类型的固定权重配置 (relevance, value, recency)
     qamr_weights_temporal: tuple = (0.3, 0.1, 0.6)     # 时间问题重视 recency
     qamr_weights_single_hop: tuple = (0.7, 0.2, 0.1)   # 事实查询重视 relevance
     qamr_weights_multi_hop: tuple = (0.4, 0.5, 0.1)    # 推理问题重视 value

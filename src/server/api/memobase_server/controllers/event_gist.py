@@ -6,7 +6,8 @@ from ..connectors import Session
 from ..utils import get_encoded_tokens, event_str_repr, event_embedding_str
 
 from ..llms.embeddings import get_embedding
-from ..qamr import rerank_by_qamr
+from ..llms import llm_complete
+from ..qamr import rerank_by_qamr, get_qamr_weights_for_query
 from datetime import timedelta
 from sqlalchemy import desc, select
 from sqlalchemy.sql import func
@@ -70,7 +71,7 @@ async def search_user_event_gists(
     topk: int = 10,
     similarity_threshold: float = 0.2,
     time_range_in_days: int = 21,
-    query_type: str = "open_domain",
+    query_type: str | None = None,
 ) -> Promise[UserEventGistsData]:
     if not CONFIG.enable_event_embedding:
         TRACE_LOG.warning(
@@ -100,7 +101,7 @@ async def search_user_event_gists(
     # Store the similarity expression to avoid recomputation
     similarity_expr = 1 - UserEventGist.embedding.cosine_distance(query_embedding)
 
-    # Fetch topk candidates (same as Soft mode for fair comparison)
+    # Keep candidate retrieval conservative for benchmark stability.
     fetch_limit = topk
 
     stmt = (
@@ -149,6 +150,19 @@ async def search_user_event_gists(
                 except (TypeError, ValueError, AttributeError):
                     value_score_map[eid] = 1.0
         
+        # Resolve fixed weights from provided query_type, LLM classification, or heuristic fallback.
+        qamr_weights = None
+        if CONFIG.enable_qamr and candidates:
+            qamr_weights = await get_qamr_weights_for_query(
+                query=query,
+                query_type=query_type,
+                llm_client=llm_complete,
+                project_id=project_id,
+                user_id=user_id,
+            )
+
+        raw_candidate_count = len(candidates)
+
         # Apply QAMR reranking if enabled
         if CONFIG.enable_qamr and candidates:
             # Helper function to get value_score from parent event
@@ -163,6 +177,7 @@ async def search_user_event_gists(
                 get_value_score=get_value_score,
                 query_type=query_type,
                 topk=topk,
+                weights=qamr_weights,
             )
             candidates = [item for item, score in reranked]
         else:
@@ -185,10 +200,17 @@ async def search_user_event_gists(
 
         # Create UserEventsData with the events
         user_event_gists_data = UserEventGistsData(gists=user_event_gists)
+
+        # Log which weighting method was used
+        weight_method = (
+            qamr_weights.source
+            if qamr_weights is not None
+            else f"type:{query_type}"
+        )
         TRACE_LOG.info(
             project_id,
             user_id,
-            f"Event Query: {query} (QAMR: {CONFIG.enable_qamr}, type: {query_type})",
+            f"Event Query: {query[:50]}... (QAMR: {CONFIG.enable_qamr}, Weight: {weight_method}, RawCandidates: {raw_candidate_count}, Returned: {len(user_event_gists)})",
         )
 
     return Promise.resolve(user_event_gists_data)

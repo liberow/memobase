@@ -6,7 +6,8 @@ from ..connectors import Session
 from ..utils import get_encoded_tokens, event_str_repr, event_embedding_str
 
 from ..llms.embeddings import get_embedding
-from ..qamr import rerank_by_qamr
+from ..llms import llm_complete
+from ..qamr import rerank_by_qamr, get_qamr_weights_for_query
 from datetime import timedelta
 from sqlalchemy import desc, select
 from sqlalchemy.sql import func
@@ -221,7 +222,7 @@ async def search_user_events(
     topk: int = 10,
     similarity_threshold: float = 0.2,
     time_range_in_days: int = 21,
-    query_type: str = "open_domain",
+    query_type: str | None = None,
 ) -> Promise[UserEventsData]:
     if not CONFIG.enable_event_embedding:
         TRACE_LOG.warning(
@@ -280,6 +281,18 @@ async def search_user_events(
                 "similarity": similarity,
             })
         
+        qamr_weights = None
+        if CONFIG.enable_qamr and candidates:
+            qamr_weights = await get_qamr_weights_for_query(
+                query=query,
+                query_type=query_type,
+                llm_client=llm_complete,
+                project_id=project_id,
+                user_id=user_id,
+            )
+
+        raw_candidate_count = len(candidates)
+
         # Apply QAMR reranking if enabled
         if CONFIG.enable_qamr and candidates:
             # Helper function to extract value_score from event_data
@@ -299,6 +312,7 @@ async def search_user_events(
                 get_value_score=get_value_score,
                 query_type=query_type,
                 topk=topk,
+                weights=qamr_weights,
             )
             candidates = [item for item, score in reranked]
         else:
@@ -321,10 +335,15 @@ async def search_user_events(
 
         # Create UserEventsData with the events
         user_events_data = UserEventsData(events=user_events)
+        weight_method = (
+            qamr_weights.source
+            if qamr_weights is not None
+            else f"type:{query_type}"
+        )
         TRACE_LOG.info(
             project_id,
             user_id,
-            f"Event Query: {query} (QAMR: {CONFIG.enable_qamr}, type: {query_type})",
+            f"Event Query: {query} (QAMR: {CONFIG.enable_qamr}, Weight: {weight_method}, RawCandidates: {raw_candidate_count}, Returned: {len(user_events)})",
         )
 
     return Promise.resolve(user_events_data)

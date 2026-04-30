@@ -286,15 +286,16 @@ python run_experiments.py \
 # 2. 运行检索测试，生成预测答案（QAMR）
 python run_experiments.py \
   --technique_type memobase \
-  --method search
+  --method search \
+  2>&1 | tee search.log
 
 # 3. 评估结果
 python evals.py \
-  --input_file results/p3/memobase_locomo_no_recency_gpt_result.json \
-  --output_file results/p3/memobase_locomo_no_recency_gpt_eval.json
+  --input_file results/qaver/memobase_locomo_llm_weight_predictor_doubao_results.json \
+  --output_file results/qaver/memobase_locomo_llm_weight_predicto_doubao_eval.json
 
 # 4. 生成分数报告
 python generate_scores.py \
-  --input_path results/p3/memobase_locomo_no_recency_gpt_eval.json
+  --input_path results/qaver/memobase_locomo_llm_weight_predicto_doubao_eval.json
 ```
 

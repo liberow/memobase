@@ -91,8 +91,8 @@ Unless the user has relevant queries, do not actively mention those memories in 
         False,
         description="If set to `True`, Memobase will fill the token window with the rest events.",
     ),
-    query_type: str = Query(
-        "open_domain",
+    query_type: str | None = Query(
+        None,
         description="Query type for QAMR weighting: temporal, single_hop, multi_hop, open_domain",
     ),
 ) -> res.UserContextDataResponse:

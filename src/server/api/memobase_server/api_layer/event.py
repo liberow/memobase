@@ -66,8 +66,8 @@ async def search_user_events(
     use_gists: bool = Query(
         True, description="Whether to search event gists (default) or event tip"
     ),
-    query_type: str = Query(
-        "open_domain", 
+    query_type: str | None = Query(
+        None,
         description="Query type for QAMR weighting: temporal, single_hop, multi_hop, open_domain"
     ),
 ) -> res.UserEventGistsDataResponse |res.UserEventsDataResponse:
@@ -96,8 +96,8 @@ async def search_user_event_gists(
     time_range_in_days: int = Query(
         180, description="Only allow events within the past few days, default is 180"
     ),
-    query_type: str = Query(
-        "open_domain", 
+    query_type: str | None = Query(
+        None,
         description="Query type for QAMR weighting: temporal, single_hop, multi_hop, open_domain"
     ),
 ) -> res.UserEventGistsDataResponse:
